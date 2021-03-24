@@ -1,0 +1,16 @@
+{
+  "data":[
+    {
+      "channelName": "蓬莱问仙客",
+      "roomId": 1661337,
+      "source": "bilibili",
+      "pushFlag": true
+    },
+    {
+      "channelName": "可乐C",
+      "roomId": 114,
+      "source": "bilibili",
+      "pushFlag": true
+    }
+  ]
+}
