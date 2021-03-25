@@ -1,13 +1,16 @@
 #include <curl/curl.h>
 #include <iostream>
 #include "./data/data.h"
+#include "./server/server.h"
 #include "./fileread/jsonfileread.h"
 
 using namespace std;
 
+
 int main()
 {
-    JsonFileRead jsonRead("../roominfo.json");
+    Server server;
+    JsonFileRead jsonRead(server, "../roominfo.json", "../sendkey.json");
 //    const string title = "推送示例";
 //    const string desp = "这是推送内容";
 //    const string id = "SCT22617TjiTJYpbYXawtRxT9CpjfKgSO";

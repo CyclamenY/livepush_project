@@ -8,16 +8,22 @@
 #include <iostream>
 #include <list>
 #include "../data/data.h"
+#include "../server/server.h"
 
 class JsonFileRead
 {
-    bool cJsonTostruct(const std::string &fileName);
-public:
+    bool cJsonTostruct(const std::string &roomFileName);
 
-    JsonFileRead(const std::string &fileName);
+    bool cJsonToList(const std::string &sendKeyFileName);
+
 public:
+    JsonFileRead(Server &server, const std::string &roomFileName, const std::string &sendKeyfileName);
+
+public:
+    Server *server;
     std::string roomInfo;
     std::list<RoomInfo *> roomList;
+    std::list<std::string> sendKeyList;
 };
 
 
