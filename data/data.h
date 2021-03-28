@@ -7,37 +7,63 @@
 #define LIVEPUSH_DATA_H
 
 #include <string>
+#include <utility>
 #include <curl/curl.h>
+
+enum LiveStatus
+{
+    ERR,
+    ONLINE,
+    OFFLINE
+};
+
+struct LiveInfo     //直播间消息
+{
+    LiveStatus status;
+    std::string title;
+    std::string liverName;
+    bool statusFlag;
+};
 
 //struct sendkey    //单个key，不需要struct，先放着
 class RoomInfo
 {
 public:
-    RoomInfo(const std::string &channelName, const std::string &roomId, const std::string &source, bool pushFlag,
+    RoomInfo(std::string channelName, std::string roomId, std::string source, bool pushFlag,
              CURL *curl) :
-            channelName(channelName), roomId(roomId), source(source), pushFlag(pushFlag), curl(curl)
+            channelName(std::move(channelName)), roomId(std::move(roomId)), source(std::move(source)),
+            pushFlag(pushFlag), curl(curl)
     {
-        curl_global_init(CURL_GLOBAL_DEFAULT);
-        curl = curl_easy_init();
+        liveStatus = OFFLINE;
+        curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, req_reply);                       //回调函数
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, reinterpret_cast<void *>(&response)); //设置写入字符串
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
     };
 
     virtual ~RoomInfo()
     {
         /* always cleanup */
         curl_easy_cleanup(curl);    //关闭连接
-        curl_global_cleanup();      //清理内存
     }
 
-    virtual bool roomHandle()
+    virtual LiveInfo roomHandle()
     {};
+
+    CURLcode curlGetRequest(std::string &response);
+
 public:
     std::string channelName;
     std::string roomId;
     std::string source;
     bool pushFlag;
     CURL *curl;
+    std::string response;
+    LiveStatus liveStatus;
 private:
 private:
+    static size_t req_reply(void *ptr, size_t size, size_t nmemb, void *stream);
 };
 
 class BilibiliRoomInfo : public RoomInfo    //bilibili房间信息
@@ -45,7 +71,15 @@ class BilibiliRoomInfo : public RoomInfo    //bilibili房间信息
 public:
     std::string liveStr = "https://api.live.bilibili.com/room/v1/Room/get_info?room_id=";
 public:
-    bool roomHandle();
+    BilibiliRoomInfo(std::string channelName, std::string roomId, std::string source, bool pushFlag,
+                     CURL *curl) : RoomInfo(std::move(channelName), std::move(roomId), std::move(source), pushFlag,
+                                            curl)
+    {
+        liveStr += this->roomId;
+        curl_easy_setopt(curl, CURLOPT_URL, liveStr.c_str()); //设置网址
+    };
+
+    LiveInfo roomHandle() override;
 };
 
 class YoutubeRoomInfo : public RoomInfo     //youtube房间信息，由于网络环境，这个可能用不到
@@ -53,41 +87,14 @@ class YoutubeRoomInfo : public RoomInfo     //youtube房间信息，由于网络
 public:
     std::string liveStr = "https://www.youtube.com/channel/";
 public:
-    bool roomHandle();
+    YoutubeRoomInfo(std::string channelName, std::string roomId, std::string source, bool pushFlag,
+                    CURL *curl) : RoomInfo(std::move(channelName), std::move(roomId), std::move(source), pushFlag, curl)
+    {
+        liveStr += (this->roomId + "/live");
+        curl_easy_setopt(curl, CURLOPT_URL, liveStr.c_str()); //设置网址
+    };
+
+    LiveInfo roomHandle() override;
 };
-
-bool BilibiliRoomInfo::roomHandle()
-{
-    CURLcode res;
-    if (curl)
-    {
-        curl_easy_setopt(curl, CURLOPT_URL, liveStr.c_str());
-        //TODO:业务逻辑
-
-        /* Perform the request, res will get the return code */
-        res = curl_easy_perform(curl);
-        /* Check for errors */
-        if (res != CURLE_OK)
-            fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                    curl_easy_strerror(res));
-    }
-}
-
-bool YoutubeRoomInfo::roomHandle()
-{
-    CURLcode res;
-    if (curl)
-    {
-        curl_easy_setopt(curl, CURLOPT_URL, liveStr.c_str());
-        //TODO:业务逻辑
-
-        /* Perform the request, res will get the return code */
-        res = curl_easy_perform(curl);
-        /* Check for errors */
-        if (res != CURLE_OK)
-            fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                    curl_easy_strerror(res));
-    }
-}
 
 #endif //LIVEPUSH_DATA_H

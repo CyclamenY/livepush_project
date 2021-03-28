@@ -29,17 +29,22 @@ bool JsonFileRead::cJsonTostruct(const std::string &roomFileName)
     {
         for (const auto &it:root["data"])
         {
-            CURL *curl;
-            auto *room = new RoomInfo(it["channelName"].asString(),std::to_string(it["roomId"].asInt()),it["source"].asString(),it["pushFlag"].asBool(),curl);
-            if (room->source == "bilibili")
+            CURL *curl = curl_easy_init();
+            if (it["source"] == "bilibili")
             {
-                reinterpret_cast<BilibiliRoomInfo *>(room)->liveStr += room->roomId;
-                server->roomList.push_back(reinterpret_cast<BilibiliRoomInfo *>(room));
-            }
-            else if (room->source == "youtube")
+                auto *room = new BilibiliRoomInfo(it["channelName"].asString(), std::to_string(it["roomId"].asInt()),
+                                                  it["source"].asString(), it["pushFlag"].asBool(), curl);
+                server->roomList.push_back(room);
+                server->roomCurlMapPush(curl, room);
+                server->roomCurlVecPush(curl);
+            } else if (it["source"] == "youtube")
             {
-                reinterpret_cast<YoutubeRoomInfo *>(room)->liveStr += (room->roomId + "live");
-                server->roomList.push_back(reinterpret_cast<YoutubeRoomInfo *>(room));
+                auto *room = new YoutubeRoomInfo(it["channelName"].asString(), std::to_string(it["roomId"].asInt()),
+                                                 it["source"].asString(), it["pushFlag"].asBool(), curl);
+                room->liveStr += (room->roomId + "/live");
+                server->roomList.push_back(room);
+                server->roomCurlMapPush(curl, room);
+                server->roomCurlVecPush(curl);
             }
         }
     }

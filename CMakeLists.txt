@@ -4,6 +4,7 @@ project(livepush)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(livepush main.cpp
-        fileread/jsonfileread.cpp server/server.cpp server/server.h)
+        fileread/jsonfileread.cpp server/server.cpp
+        data/data.cpp)
 
-target_link_libraries(livepush curl jsoncpp)
+target_link_libraries(livepush curl jsoncpp pthread)

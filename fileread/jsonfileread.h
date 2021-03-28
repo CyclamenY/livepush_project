@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <list>
+#include <curl/curl.h>
 #include "../data/data.h"
 #include "../server/server.h"
 

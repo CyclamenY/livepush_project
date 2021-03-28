@@ -9,8 +9,10 @@ using namespace std;
 
 int main()
 {
+    curl_global_init(CURL_GLOBAL_DEFAULT);
     Server server;
     JsonFileRead jsonRead(server, "../roominfo.json", "../sendkey.json");
+    server.serverRun();
 //    const string title = "推送示例";
 //    const string desp = "这是推送内容";
 //    const string id = "SCT22617TjiTJYpbYXawtRxT9CpjfKgSO";
@@ -40,5 +42,7 @@ int main()
 //
 //    curl_global_cleanup();
 
+    //清理操作
+    curl_global_cleanup();      //清理内存
     return 0;
 }
