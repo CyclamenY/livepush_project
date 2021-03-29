@@ -9,7 +9,7 @@ using namespace std;
 
 int main()
 {
-    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl_global_init(CURL_GLOBAL_ALL);
     Server server;
     JsonFileRead jsonRead(server, "../roominfo.json", "../sendkey.json");
     server.serverRun();

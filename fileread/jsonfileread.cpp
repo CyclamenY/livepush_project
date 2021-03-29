@@ -37,7 +37,8 @@ bool JsonFileRead::cJsonTostruct(const std::string &roomFileName)
                 server->roomList.push_back(room);
                 server->roomCurlMapPush(curl, room);
                 server->roomCurlVecPush(curl);
-            } else if (it["source"] == "youtube")
+            }
+            else if (it["source"] == "youtube")
             {
                 auto *room = new YoutubeRoomInfo(it["channelName"].asString(), std::to_string(it["roomId"].asInt()),
                                                  it["source"].asString(), it["pushFlag"].asBool(), curl);
@@ -67,7 +68,11 @@ bool JsonFileRead::cJsonToList(const std::string &sendKeyFileName)
     if (reader.parse(sendKeyInfoFile, root))
     {
         for (const auto &it:root["sendkey"])
+        {
             server->sendKeyList.emplace_back(it.asString());
+            CURL *curl = curl_easy_init();
+            server->pushCurlVecPush(it.asString(), curl);
+        }
     }
     sendKeyInfoFile.close();
     return true;
