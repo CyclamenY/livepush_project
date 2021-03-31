@@ -6,25 +6,25 @@
 #include <unistd.h>
 #include <regex>
 
-size_t Server::req_reply(void *ptr, size_t size, size_t nmemb, void *stream)
-{
-    if (stream == nullptr || ptr == nullptr || size == 0)
-        return 0;
-    size_t realsize = size * nmemb;
-    auto *buffer = (std::string *)stream;
-    if (buffer != nullptr)
-        buffer->append((const char *)ptr, realsize);
-    return realsize;
-}
+//size_t Server::req_reply(void *ptr, size_t size, size_t nmemb, void *stream)
+//{
+//    if (stream == nullptr || ptr == nullptr || size == 0)
+//        return 0;
+//    size_t realsize = size * nmemb;
+//    auto *buffer = (std::string *)stream;
+//    if (buffer != nullptr)
+//        buffer->append((const char *)ptr, realsize);
+//    return realsize;
+//}
 
 void Server::httpRequest()
 {
-    CURL *nowcurl = nullptr;
     CURLM *curlm = curl_multi_init();
+    CURL *nowcurl = nullptr;
     CURLMsg *msg = nullptr;
     int stillRunning = 0;
     int msgsLeft = 0;
-    while (true)
+    while (runFlag)
     {
         for (const auto &it:roomList)
             curl_multi_add_handle(curlm, it->curl);
@@ -62,20 +62,22 @@ void Server::httpRequest()
             }
         }
         sleep(60);
+        //sleep(10);  //调试使用
     }
+    curl_multi_cleanup(curlm);
 }
 
 void Server::livePush()
 {
     LiveInfo info;
-    CURL *nowcurl = nullptr;
     CURLM *curlm = curl_multi_init();
+    CURL *nowcurl = nullptr;
     CURLMsg *msg = nullptr;
     int stillRunning = 0;
     int msgsLeft = 0;
-    std::string pushUrl = "https://sctapi.ftqq.com/";
+    std::string pushUrl;
     std::string response;
-    while (true)
+    while (runFlag)
     {
         lock.lock();
         if (messageList.empty())
@@ -96,27 +98,22 @@ void Server::livePush()
             std::string temp;
             if (info.status == ONLINE)
             {
-                temp=info.liverName+"开播啦！";
-                exLiver=curl_easy_escape(nullptr,temp.c_str(),temp.size());
-                exTitle=curl_easy_escape(nullptr,info.title.c_str(),info.title.size());
-                pushUrl = pushUrl + it.first + ".send?" + "title=" + exLiver + "&desp=" + exTitle;
-                //pushUrl="https://sctapi.ftqq.com/SCT22617TjiTJYpbYXawtRxT9CpjfKgSO.send?title=%E5%8F%AF%E4%B9%90C%E5%BC%80%E6%92%AD%E5%95%A6%EF%BC%81&desp=%E3%80%90%E5%8F%AF%E4%B9%90C%E3%80%91Deep%20Dark%20%E6%B0%B4%E4%B8%96%E7%95%8C";
+                temp = info.liverName + "开播啦！";
+                exLiver = curl_easy_escape(nullptr, temp.c_str(), temp.size());
+                exTitle = curl_easy_escape(nullptr, info.title.c_str(), info.title.size());
+                pushUrl = "https://sctapi.ftqq.com/" + it.first + ".send?" + "title=" + exLiver + "&desp=" + exTitle;
                 free(exTitle);
             }
             else
             {
-                temp=info.liverName+"已下播";
-                exLiver=curl_easy_escape(nullptr,temp.c_str(),temp.size());
-                pushUrl = pushUrl + it.first + ".send?" + "title=" + exLiver;
+                temp = info.liverName + "已下播";
+                exLiver = curl_easy_escape(nullptr, temp.c_str(), temp.size());
+                pushUrl = "https://sctapi.ftqq.com/" + it.first + ".send?" + "title=" + exLiver;
             }
             free(exLiver);
             CURL *curl = it.second;
             curl_easy_setopt(curl, CURLOPT_URL, pushUrl.c_str());
-            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, req_reply);                       //回调函数
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, reinterpret_cast<void *>(&response)); //设置写入字符串
-            curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10);
-            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
             curl_multi_add_handle(curlm, curl);
             //free(exPushUrl);
         }
@@ -134,14 +131,18 @@ void Server::livePush()
         } while (stillRunning);
         while (msg = curl_multi_info_read(curlm, &msgsLeft))
         {
+            std::cout << msg->data.result << std::endl;
             if (msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK)
             {
+                std::cout << response << std::endl;
                 nowcurl = msg->easy_handle;
                 curl_multi_remove_handle(curlm, nowcurl);
                 //free(exPushUrl);
             }
         }
+        response.clear();
     }
+    curl_multi_cleanup(curlm);
 }
 
 void Server::serverRun()

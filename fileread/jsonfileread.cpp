@@ -71,7 +71,12 @@ bool JsonFileRead::cJsonToList(const std::string &sendKeyFileName)
         {
             server->sendKeyList.emplace_back(it.asString());
             CURL *curl = curl_easy_init();
-            server->pushCurlVecPush(it.asString(), curl);
+            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, RoomInfo::req_reply);//回调函数
+            curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10);
+            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30);
+            curl_easy_setopt(curl, CURLOPT_DNS_CACHE_TIMEOUT, 0);
+            server->pushCurlMapPush(it.asString(), curl);
         }
     }
     sendKeyInfoFile.close();

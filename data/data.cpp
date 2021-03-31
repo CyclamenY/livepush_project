@@ -4,6 +4,7 @@
 
 #include "data.h"
 #include <jsoncpp/json/json.h>
+#include <iostream>
 
 size_t RoomInfo::req_reply(void *ptr, size_t size, size_t nmemb, void *stream)
 {
@@ -33,13 +34,17 @@ LiveInfo BilibiliRoomInfo::roomHandle()
     {
         if (root["code"].asInt() == 1)
             info.status = ERR;
+        std::cout << "live_status:" << root["data"]["live_status"].asInt() << std::endl;
         if (root["data"]["live_status"].asInt() == 1)
         {
             info.status = ONLINE;
             info.title = root["data"]["title"].asString();
-        } else
+            std::cout << info.title << std::endl;
+        }
+        else
             info.status = OFFLINE;
     }
+    response.clear();
     return info;
 }
 

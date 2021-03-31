@@ -35,6 +35,7 @@ public:
             pushFlag(pushFlag), curl(curl)
     {
         liveStatus = OFFLINE;
+        curl_easy_setopt(curl, CURLOPT_DNS_CACHE_TIMEOUT, 0);
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, req_reply);                       //回调函数
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, reinterpret_cast<void *>(&response)); //设置写入字符串
@@ -52,6 +53,7 @@ public:
     {};
 
     CURLcode curlGetRequest(std::string &response);
+    static size_t req_reply(void *ptr, size_t size, size_t nmemb, void *stream);
 
 public:
     std::string channelName;
@@ -63,7 +65,6 @@ public:
     LiveStatus liveStatus;
 private:
 private:
-    static size_t req_reply(void *ptr, size_t size, size_t nmemb, void *stream);
 };
 
 class BilibiliRoomInfo : public RoomInfo    //bilibili房间信息

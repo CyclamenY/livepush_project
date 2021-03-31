@@ -20,6 +20,7 @@ class Server
 public:
     std::list<RoomInfo *> roomList;         //房间配置信息列表
     std::list<std::string> sendKeyList;     //密钥信息列表
+    static bool runFlag;                                //运行变量
 private:
     std::thread *pushThread;                          //推送消息线程
     std::list<LiveInfo> messageList;                  //消息队列
@@ -36,7 +37,7 @@ public:
         return true;
     };
 
-    bool pushCurlVecPush(const std::string &sendKey, CURL *curl)
+    bool pushCurlMapPush(const std::string &sendKey, CURL *curl)
     {
         pushCurlMap[sendKey] = curl;
         return true;
@@ -52,7 +53,6 @@ private:
     void livePush();        //子线程在此循环
     void roomHandle();      //房间处理
     static void *livePushEnter(void *arg);
-    static size_t req_reply(void *ptr, size_t size, size_t nmemb, void *stream);    //curl回调函数
 };
 
 
