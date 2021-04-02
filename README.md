@@ -5,6 +5,7 @@
 --------
 
 * jsoncpp，因为需要解析房间名和id的json文件
+  * centos系统运行时可能要将源文件中所有```#include <jsoncpp\json\json.h>```修改为```#include <json\json.h>```，当然也可以在```/usr/local/include/json```外面套一层```jsoncpp```文件夹
 * cmake与make，本项目改用cmake编译
 * libcurl，C\+\+HTTPS请求库，用于轮询B站和油管接口以及Server酱接口
 * Server酱账号
