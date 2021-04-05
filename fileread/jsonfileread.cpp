@@ -34,7 +34,7 @@ bool JsonFileRead::cJsonTostruct(const std::string &roomFileName)
             {
                 auto *room = new BilibiliRoomInfo(it["channelName"].asString(), std::to_string(it["roomId"].asInt()),
                                                   it["source"].asString(), it["pushFlag"].asBool(), curl);
-                server->roomList.push_back(room);
+                server->roomList.emplace_back(room);
                 server->roomCurlMapPush(curl, room);
                 server->roomCurlVecPush(curl);
             }
@@ -43,7 +43,7 @@ bool JsonFileRead::cJsonTostruct(const std::string &roomFileName)
                 auto *room = new YoutubeRoomInfo(it["channelName"].asString(), std::to_string(it["roomId"].asInt()),
                                                  it["source"].asString(), it["pushFlag"].asBool(), curl);
                 room->liveStr += (room->roomId + "/live");
-                server->roomList.push_back(room);
+                server->roomList.emplace_back(room);
                 server->roomCurlMapPush(curl, room);
                 server->roomCurlVecPush(curl);
             }

@@ -14,6 +14,8 @@
 #include <unordered_map>
 #include <map>
 #include <mutex>
+#include <condition_variable>
+#include "../include/include.h"
 
 class Server
 {
@@ -28,6 +30,7 @@ private:
     std::unordered_map<CURL *, RoomInfo *> roomMap;     //room curl关联roominfo map
     std::map<std::string, CURL *> pushCurlMap;                     //推送curl map
     std::mutex lock;                                    //互斥锁
+    std::condition_variable cond;                       //条件变量
 public:
 
     void serverRun();       //程序执行入口
@@ -48,11 +51,17 @@ public:
         roomMap[curl] = room;
         return true;
     };
+
+    ~Server()
+    {
+        for (auto const &it:roomList)
+            delete it;
+        delete pushThread;
+    }
+
 private:
     void httpRequest();     //主线程在此循环
     void livePush();        //子线程在此循环
-    void roomHandle();      //房间处理
-    static void *livePushEnter(void *arg);
 };
 
 

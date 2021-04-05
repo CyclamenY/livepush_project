@@ -6,17 +6,6 @@
 #include <unistd.h>
 #include <regex>
 
-//size_t Server::req_reply(void *ptr, size_t size, size_t nmemb, void *stream)
-//{
-//    if (stream == nullptr || ptr == nullptr || size == 0)
-//        return 0;
-//    size_t realsize = size * nmemb;
-//    auto *buffer = (std::string *)stream;
-//    if (buffer != nullptr)
-//        buffer->append((const char *)ptr, realsize);
-//    return realsize;
-//}
-
 void Server::httpRequest()
 {
     CURLM *curlm = curl_multi_init();
@@ -40,7 +29,8 @@ void Server::httpRequest()
             }
             curl_multi_perform(curlm, &stillRunning);
         } while (stillRunning);
-        while (msg = curl_multi_info_read(curlm, &msgsLeft))
+        msg = curl_multi_info_read(curlm, &msgsLeft);
+        while (msg)
         {
             if (msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK)
             {
@@ -52,17 +42,24 @@ void Server::httpRequest()
                         info.statusFlag = true;
                     else if (info.status == OFFLINE)   //说明现在是下播
                         info.statusFlag = false;
-                    lock.lock();
+                    std::unique_lock<std::mutex> locker(lock);
                     messageList.push_back(info);
-                    lock.unlock();
+                    locker.unlock();
                     roomMap[nowcurl]->liveStatus = info.status;
-                    //TODO:唤醒线程
+#ifdef __DEBUG__
+                    std::cout << info.liverName << (info.status ? "开播推入消息队列" : "下播推入消息队列");
+#endif
+                    cond.notify_one();
                 }
                 curl_multi_remove_handle(curlm, nowcurl);
             }
+            msg = curl_multi_info_read(curlm, &msgsLeft);
         }
+#ifdef __DEBUG__
+        sleep(10);  //调试使用
+#else
         sleep(60);
-        //sleep(10);  //调试使用
+#endif
     }
     curl_multi_cleanup(curlm);
 }
@@ -77,20 +74,14 @@ void Server::livePush()
     int msgsLeft = 0;
     std::string pushUrl;
     std::string response;
-    while (runFlag)
+    while (runFlag || !messageList.empty())
     {
-        lock.lock();
-        if (messageList.empty())
-        {
-            lock.unlock();
-            continue;
-        }
-        else
-        {
-            info = messageList.front();
-            messageList.pop_front();
-        }
-        lock.unlock();
+        std::unique_lock<std::mutex> locker(lock);
+        while (messageList.empty())
+            cond.wait(locker);
+        info = messageList.front();
+        messageList.pop_front();
+        locker.unlock();
         for (const auto &it:pushCurlMap)
         {
             char *exLiver;
@@ -129,16 +120,19 @@ void Server::livePush()
             }
             curl_multi_perform(curlm, &stillRunning);
         } while (stillRunning);
-        while (msg = curl_multi_info_read(curlm, &msgsLeft))
+        msg = curl_multi_info_read(curlm, &msgsLeft);
+        while (msg)
         {
-            std::cout << msg->data.result << std::endl;
             if (msg->msg == CURLMSG_DONE && msg->data.result == CURLE_OK)
             {
-                std::cout << response << std::endl;
                 nowcurl = msg->easy_handle;
+#ifdef __DEBUG__
+                std::cout << "发送一条消息" << std::endl;
+#endif
                 curl_multi_remove_handle(curlm, nowcurl);
                 //free(exPushUrl);
             }
+            msg = curl_multi_info_read(curlm, &msgsLeft);
         }
         response.clear();
     }
@@ -148,15 +142,8 @@ void Server::livePush()
 void Server::serverRun()
 {
     pushThread = new std::thread(&Server::livePush, this);
-    pushThread->detach();
     httpRequest();
-}
-
-void *Server::livePushEnter(void *arg)
-{
-    auto *server = reinterpret_cast<Server *>(arg);
-    server->livePush();
-    return server;
+    pushThread->join();
 }
 
 

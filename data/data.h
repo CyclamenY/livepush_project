@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 #include <curl/curl.h>
+#include "../include/include.h"
 
 enum LiveStatus
 {
@@ -49,10 +50,8 @@ public:
         curl_easy_cleanup(curl);    //关闭连接
     }
 
-    virtual LiveInfo roomHandle()
-    {};
+    virtual LiveInfo roomHandle() = 0;
 
-    CURLcode curlGetRequest(std::string &response);
     static size_t req_reply(void *ptr, size_t size, size_t nmemb, void *stream);
 
 public:

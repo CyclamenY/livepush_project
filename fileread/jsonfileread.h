@@ -10,6 +10,7 @@
 #include <curl/curl.h>
 #include "../data/data.h"
 #include "../server/server.h"
+#include "../include/include.h"
 
 class JsonFileRead
 {
@@ -22,9 +23,6 @@ public:
 
 public:
     Server *server;
-    std::string roomInfo;
-    std::list<RoomInfo *> roomList;
-    std::list<std::string> sendKeyList;
 };
 
 

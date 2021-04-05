@@ -5,6 +5,8 @@
 #include "data.h"
 #include <jsoncpp/json/json.h>
 #include <iostream>
+#include <gq/Document.h>
+#include <gq/Node.h>
 
 size_t RoomInfo::req_reply(void *ptr, size_t size, size_t nmemb, void *stream)
 {
@@ -15,12 +17,6 @@ size_t RoomInfo::req_reply(void *ptr, size_t size, size_t nmemb, void *stream)
     if (buffer != nullptr)
         buffer->append((const char *)ptr, realsize);
     return realsize;
-}
-
-CURLcode RoomInfo::curlGetRequest(std::string &response)
-{
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, reinterpret_cast<void *>(&response)); //设置写入字符串
-    return curl_easy_perform(curl);
 }
 
 LiveInfo BilibiliRoomInfo::roomHandle()
@@ -34,12 +30,16 @@ LiveInfo BilibiliRoomInfo::roomHandle()
     {
         if (root["code"].asInt() == 1)
             info.status = ERR;
-        std::cout << "live_status:" << root["data"]["live_status"].asInt() << std::endl;
+#ifdef __DEBUG__
+        std::cout << this->channelName << " live_status:" << root["data"]["live_status"].asInt() << std::endl;
+#endif
         if (root["data"]["live_status"].asInt() == 1)
         {
             info.status = ONLINE;
             info.title = root["data"]["title"].asString();
+#ifdef __DEBUG__
             std::cout << info.title << std::endl;
+#endif
         }
         else
             info.status = OFFLINE;
@@ -50,19 +50,36 @@ LiveInfo BilibiliRoomInfo::roomHandle()
 
 LiveInfo YoutubeRoomInfo::roomHandle()
 {
-    CURLcode res;
-    std::string result;
-    if (curl)
+    LiveInfo info;
+    info.liverName = this->channelName;
+    CDocument doc;
+    doc.parse(response);
+    CSelection ans = doc.find("html body[dir] script[nonce]");
+    if (!ans.nodeAt(0).valid())
+        return info;
+    std::string r = ans.nodeAt(0).text();
+    unsigned long indexFront = 0;
+    unsigned long indexLast = r.size() - 1;
+    while (r.front() != '{')        //越过前面的var ytInitialPlayerResponse
+        ++indexFront;
+    while (r.back() != '}')         //去掉后面可能的多余字符
+        --indexLast;
+    std::string res = r.substr(indexFront, indexLast - indexLast);
+    //这个数组里面是一个json文件，利用json解析即可
+    Json::Reader reader;
+    Json::Value root;
+    if (reader.parse(res, root))
     {
-        res = curlGetRequest(liveStr);
-        /* Check for errors */
-        if (res != CURLE_OK)
+        if (root["videoDetails"]["isLive"].asBool())
         {
-            fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                    curl_easy_strerror(res));
-            //return ERR;
+            info.status = ONLINE;
+            info.title = root["videoDetails"]["title"].asString();
+#ifdef __DEBUG__
+            std::cout << info.title << std::endl;
+#endif
         }
-        //TODO:业务逻辑
+        else
+            info.status = OFFLINE;
     }
-    //return ONLINE;
+    return info;
 }
