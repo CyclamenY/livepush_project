@@ -36,7 +36,7 @@ bool JsonFileRead::cJsonTostruct(const std::string &roomFileName)
                                                   it["source"].asString(), it["pushFlag"].asBool(), curl);
                 server->roomList.emplace_back(room);
                 server->roomCurlMapPush(curl, room);
-                server->roomCurlVecPush(curl);
+//                server->roomCurlVecPush(curl);
             }
             else if (it["source"] == "youtube")
             {
@@ -45,7 +45,15 @@ bool JsonFileRead::cJsonTostruct(const std::string &roomFileName)
                 room->liveStr += (room->roomId + "/live");
                 server->roomList.emplace_back(room);
                 server->roomCurlMapPush(curl, room);
-                server->roomCurlVecPush(curl);
+//                server->roomCurlVecPush(curl);
+            }
+            else if(it["source"] == "douyu")
+            {
+                auto *room = new DouyuRoomInfo(it["channelName"].asString(), std::to_string(it["roomId"].asInt()),
+                                                 it["source"].asString(), it["pushFlag"].asBool(), curl);
+                server->roomList.emplace_back(room);
+                server->roomCurlMapPush(curl, room);
+//                server->roomCurlVecPush(curl);
             }
         }
     }

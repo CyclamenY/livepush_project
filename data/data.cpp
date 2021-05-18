@@ -7,6 +7,38 @@
 #include <iostream>
 #include <gq/Document.h>
 #include <gq/Node.h>
+#include <iconv.h>
+#include <cstring>
+
+std::string UnicodeToUtf8(char *sourceData)
+{
+    iconv_t cd = iconv_open("UTF-8", "UNICODE//IGNORE");
+    if (cd == (iconv_t)-1)
+        perror("iconv_open");
+    size_t srclen = strlen(sourceData);
+
+    /* 存放转换后的字符串 */
+    size_t outlen = 1024;
+    char outbuf[outlen];
+    memset(outbuf, 0, outlen);
+
+    /* 由于iconv()函数会修改指针，所以要保存源指针 */
+    char *srcstart = sourceData;
+    char *tempoutbuf = outbuf;
+
+    /* 进行转换
+     *@param cd iconv_open()产生的句柄
+     *@param srcstart 需要转换的字符串
+     *@param srclen 存放还有多少字符没有转换
+     *@param tempoutbuf 存放转换后的字符串
+     *@param outlen 存放转换后,tempoutbuf剩余的空间
+     *
+     * */
+    size_t ret = iconv(cd, &srcstart, &srclen, &tempoutbuf, &outlen);
+    if (ret == -1)
+        perror("iconv");
+    return outbuf;
+}
 
 size_t RoomInfo::req_reply(void *ptr, size_t size, size_t nmemb, void *stream)
 {
@@ -81,5 +113,34 @@ LiveInfo YoutubeRoomInfo::roomHandle()
         else
             info.status = OFFLINE;
     }
+    return info;
+}
+
+LiveInfo DouyuRoomInfo::roomHandle()
+{
+    Json::Reader reader;
+    Json::Value root;
+    LiveInfo info;
+    info.liverName = this->channelName;
+    if (reader.parse(response, root))
+    {
+        if (root["Rendata"]["tname"].asString() == "not_find")
+            info.status = ERR;
+#ifdef __DEBUG__
+        std::cout << this->channelName << " live_status:" << root["Rendata"]["media_type"].asString() << std::endl;
+#endif
+        if (root["Rendata"]["media_type"].asString() == "live")
+        {
+            info.status = ONLINE;
+            char *inbuf = const_cast<char *>(root["Rendata"]["roomName"].asCString());
+            info.title = UnicodeToUtf8(inbuf);
+#ifdef __DEBUG__
+            std::cout << info.title << std::endl;
+#endif
+        }
+        else
+            info.status = OFFLINE;
+    }
+    response.clear();
     return info;
 }

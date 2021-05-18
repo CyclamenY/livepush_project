@@ -26,6 +26,8 @@ struct LiveInfo     //直播间消息
     bool statusFlag;
 };
 
+std::string UnicodeToUtf8(char * sourceData);
+
 //struct sendkey    //单个key，不需要struct，先放着
 class RoomInfo
 {
@@ -91,6 +93,22 @@ public:
                     CURL *curl) : RoomInfo(std::move(channelName), std::move(roomId), std::move(source), pushFlag, curl)
     {
         liveStr += (this->roomId + "/live");
+        curl_easy_setopt(curl, CURLOPT_URL, liveStr.c_str()); //设置网址
+    };
+
+    LiveInfo roomHandle() override;
+};
+
+class DouyuRoomInfo : public RoomInfo     //斗鱼房间信息
+{
+public:
+    //属于第三方api，随时可能失效
+    std::string liveStr = "https://web.sinsyth.com/lxapi/douyujx.x?roomid=";
+public:
+    DouyuRoomInfo(std::string channelName, std::string roomId, std::string source, bool pushFlag,
+                    CURL *curl) : RoomInfo(std::move(channelName), std::move(roomId), std::move(source), pushFlag, curl)
+    {
+        liveStr += this->roomId;
         curl_easy_setopt(curl, CURLOPT_URL, liveStr.c_str()); //设置网址
     };
 

@@ -22,23 +22,22 @@ class Server
 public:
     std::list<RoomInfo *> roomList;         //房间配置信息列表
     std::list<std::string> sendKeyList;     //密钥信息列表
-    static bool runFlag;                                //运行变量
 private:
     std::thread *pushThread;                          //推送消息线程
     std::list<LiveInfo> messageList;                  //消息队列
-    std::vector<CURL *> roomCurlVec;                     //room curl数组
+//    std::vector<CURL *> roomCurlVec;                     //room curl数组
     std::unordered_map<CURL *, RoomInfo *> roomMap;     //room curl关联roominfo map
     std::map<std::string, CURL *> pushCurlMap;                     //推送curl map
     std::mutex lock;                                    //互斥锁
     std::condition_variable cond;                       //条件变量
 public:
-
+    static bool runFlag;                                //运行变量
     void serverRun();       //程序执行入口
-    bool roomCurlVecPush(CURL *curl)
-    {
-        roomCurlVec.emplace_back(curl);
-        return true;
-    };
+//    bool roomCurlVecPush(CURL *curl)
+//    {
+//        roomCurlVec.emplace_back(curl);
+//        return true;
+//    };
 
     bool pushCurlMapPush(const std::string &sendKey, CURL *curl)
     {

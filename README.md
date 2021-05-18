@@ -1,12 +1,12 @@
 # livepush_project
- 一款bilibili,youtube开播提醒工具
+ 一款bilibili,youtube,斗鱼开播提醒工具
 
 需要的东西
 --------
 
 * jsoncpp，因为需要解析房间名和id的json文件
   * centos系统运行时可能要将源文件中所有```#include <jsoncpp\json\json.h>```修改为```#include <json\json.h>```，当然也可以在```/usr/local/include/json```外面套一层```jsoncpp```文件夹
-* cmake与make，本项目改用cmake编译
+* cmake与make，本项目使用cmake编译
 * libcurl，C\+\+HTTPS请求库，用于轮询B站和油管接口以及Server酱接口
 * Server酱账号
 * gumbo-parser 谷歌的一个纯C HTML解析库
@@ -39,6 +39,7 @@
 - `2021.3.29` 推送侧完成，项目已可用
 - `2021.3.31` 修复多次轮询返回相同结果的问题，增加对Ctrl+C信号的处理（试运行）
 - `2021.4.5` 更新，完成youtube查询逻辑（还没有测试），项目基本完工
+- `2021.5.18` 更新，增加对斗鱼直播间的支持（未测试）
 
 需要完善的事情
 -------
